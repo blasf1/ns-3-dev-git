@@ -482,7 +482,7 @@ bool
 Queue<Item>::DoEnqueue (ConstIterator pos, Ptr<Item> item)
 {
   NS_LOG_FUNCTION (this << item);
-
+  
   if (GetCurrentSize () + item > GetMaxSize ())
     {
       NS_LOG_LOGIC ("Queue full -- dropping pkt");
@@ -501,7 +501,7 @@ Queue<Item>::DoEnqueue (ConstIterator pos, Ptr<Item> item)
 
   NS_LOG_LOGIC ("m_traceEnqueue (p)");
   m_traceEnqueue (item);
-
+  //NS_LOG_INFO("EL NUMERO DE SECUENCIA ES " << item->GetHeader().GetSequenceNumber() << ".");
   return true;
 }
 

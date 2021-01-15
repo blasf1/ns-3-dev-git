@@ -457,6 +457,13 @@ private:
    */
   uint32_t GetCfEndSize (void) const;
   /**
+   * Forward a multicast PSDU down to WifiPhy for transmission.
+   *
+   * \param psdu the PSDU
+   * \param txVector the transmit vector
+   */
+  void ForwardDownMulticast (Ptr<const WifiPsdu> psdu, WifiTxVector txVector);
+  /**
    * Forward a PSDU down to WifiPhy for transmission.
    *
    * \param psdu the PSDU

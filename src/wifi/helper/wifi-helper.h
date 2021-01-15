@@ -472,6 +472,7 @@ public:
    */
   virtual NetDeviceContainer Install (const WifiPhyHelper &phy,
                                       const WifiMacHelper &mac, std::string nodeName) const;
+
   /**
    * \param standard the standard to configure during installation
    *

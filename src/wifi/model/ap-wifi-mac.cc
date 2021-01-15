@@ -25,6 +25,7 @@
 #include "ns3/simulator.h"
 #include "ns3/pointer.h"
 #include "ns3/string.h"
+#include "ns3/integer.h"
 #include "ns3/random-variable-stream.h"
 #include "ap-wifi-mac.h"
 #include "mac-low.h"
@@ -37,6 +38,8 @@
 #include "wifi-net-device.h"
 #include "ht-configuration.h"
 #include "he-configuration.h"
+
+#include <iostream>
 
 namespace ns3 {
 
@@ -83,6 +86,12 @@ ApWifiMac::GetTypeId (void)
                    BooleanValue (true),
                    MakeBooleanAccessor (&ApWifiMac::m_enableNonErpProtection),
                    MakeBooleanChecker ())
+    .AddAttribute ("MulticastMode", "Multicast mode to use"
+                   "This parameter is only used in multicast transmissions.",
+                   IntegerValue(0),
+                   MakePointerAccessor (&ApWifiMac::SetMulticastMode,
+                                        &ApWifiMac::GetMulticastMode ),
+                   MakePointerChecker<MulticastMode>())
   ;
   return tid;
 }
@@ -356,17 +365,56 @@ ApWifiMac::ForwardDown (Ptr<Packet> packet, Mac48Address from,
   hdr.SetAddr3 (from);
   hdr.SetDsFrom ();
   hdr.SetDsNotTo ();
-
-  if (GetQosSupported ())
+  
+  if(to.IsGroup() && !to.IsBroadcast())
+  {
+    
+    
+    switch(GetMulticastMode()->GetMode())
     {
+      case MulticastMode::ModesList::Legacy:
+        break;
+      case MulticastMode::ModesList::DMS:
+        //For each node in the multicast group, enqueue the packet once, changing the address
+        //also set the retries to keep the same sequence number for all stations in maclow
+        for(auto i = m_multicastmode->GetGroup(to)->begin() ; i != m_multicastmode->GetGroup(to)->end() ; i++)
+        {
+          Ptr<MulticastMode> mode(new MulticastMode());
+          mode->SetMode(m_multicastmode->GetMode());
+          mode->SetGroups(m_multicastmode->GetGroups());
+          mode->SetRetries(m_multicastmode->GetGroup(to)->size());
+          mode->SetRetry(i - m_multicastmode->GetGroup(to)->begin());
+          hdr.SetAddr1(*i);
+          hdr.SetMulticastMode(mode);
+          m_txop->Queue(packet,hdr);
+        }
+        break;
+      case MulticastMode::ModesList::GCRUR:
+        for (uint16_t i = 0 ; i < m_multicastmode->GetRetries() ; i++)
+        {
+          Ptr<MulticastMode> mode(new MulticastMode());
+          mode->SetMode(m_multicastmode->GetMode());
+          //mode->SetGroups(m_multicastmode->GetGroups());
+          mode->SetRetries(m_multicastmode->GetRetries());
+          mode->SetRetry(i);
+          hdr.SetMulticastMode(mode);
+          m_txop->Queue(packet,hdr);
+        }
+        break;
+    }
+    
+  }
+  else  
+  if (GetQosSupported ())
+  {
       //Sanity check that the TID is valid
       NS_ASSERT (tid < 8);
       m_edca[QosUtilsMapTidToAc (tid)]->Queue (packet, hdr);
-    }
+  }
   else
-    {
-      m_txop->Queue (packet, hdr);
-    }
+  {
+    m_txop->Queue (packet, hdr);
+  }
 }
 
 void
@@ -1613,5 +1661,17 @@ ApWifiMac::IncrementPollingListIterator (void)
       m_itCfPollingList = m_cfPollingList.begin ();
     }
 }
+
+Ptr<MulticastMode> 
+ApWifiMac::GetMulticastMode(void) const
+{
+  return m_multicastmode;
+}
+
+ void 
+ ApWifiMac::SetMulticastMode(Ptr<MulticastMode> mode)
+ {
+   m_multicastmode = mode;
+ }
 
 } //namespace ns3

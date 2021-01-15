@@ -24,6 +24,8 @@
 #define AP_WIFI_MAC_H
 
 #include "infrastructure-wifi-mac.h"
+#include "multicast-mode.h"
+
 
 namespace ns3 {
 
@@ -36,6 +38,7 @@ class HtOperation;
 class VhtOperation;
 class HeOperation;
 class CfParameterSet;
+class MulticastMode;
 
 /**
  * \brief Wi-Fi AP state machine
@@ -121,7 +124,19 @@ public:
    */
   int64_t AssignStreams (int64_t stream);
 
+  /**
+   * Return the IEEE 802.11aa multicast mode that we support.
+   *
+   * \return the DSSS Parameter Set that we support
+   */
+  Ptr<MulticastMode> GetMulticastMode(void) const;
 
+  /**
+   * Return the IEEE 802.11aa multicast mode that we support.
+   *
+   * \param mode the IEEE 802.11aa multicast mode
+   */
+  void SetMulticastMode(Ptr<MulticastMode> mode);
 private:
   void Receive (Ptr<WifiMacQueueItem> mpdu);
   /**
@@ -298,6 +313,7 @@ private:
   std::list<Mac48Address> m_cfPollingList;   //!< List of all PCF stations currently associated to the AP
   std::list<Mac48Address>::iterator m_itCfPollingList; //!< Iterator to the list of all PCF stations currently associated to the AP
   bool m_enableNonErpProtection;             //!< Flag whether protection mechanism is used or not when non-ERP STAs are present within the BSS
+  Ptr<MulticastMode> m_multicastmode;             //!< Defines the multicast transmission mode from the ones available at IEEE 802.11aa
 };
 
 } //namespace ns3

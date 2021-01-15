@@ -110,7 +110,6 @@ bool
 WifiMacQueue::Enqueue (Ptr<WifiMacQueueItem> item)
 {
   NS_LOG_FUNCTION (this << *item);
-
   return Insert (end (), item);
 }
 

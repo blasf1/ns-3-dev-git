@@ -451,6 +451,19 @@ MacLow::StartTransmission (Ptr<WifiMacQueueItem> mpdu,
    */
   m_currentPacket = Create<WifiPsdu> (mpdu, false);
   const WifiMacHeader& hdr = mpdu->GetHeader ();
+
+  if (hdr.GetAddr1().IsGroup() && !hdr.IsCtl() && !hdr.IsBeacon() && !hdr.GetAddr1().IsBroadcast())
+  {
+    switch(hdr.GetMulticastMode()->GetMode())
+    {
+      case MulticastMode::ModesList::DMS:
+        m_currentPacket->GetHeader(0).SetSequenceNumber(hdr.GetSequenceNumber() - hdr.GetMulticastMode()->GetRetry());
+        break;
+      case MulticastMode::ModesList::GCRUR:
+        m_currentPacket->GetHeader(0).SetSequenceNumber(hdr.GetSequenceNumber() - hdr.GetMulticastMode()->GetRetry());
+        break;
+    }
+  } 
   CancelAllEvents ();
   m_currentTxop = txop;
   m_txParams = params;
@@ -1607,54 +1620,55 @@ MacLow::ForwardDown (Ptr<const WifiPsdu> psdu, WifiTxVector txVector)
                 ", duration=" << hdr.GetDuration () <<
                 ", seq=0x" << std::hex << hdr.GetSequenceControl () << std::dec);
 
-  if (hdr.IsCfPoll () && m_stationManager->GetPcfSupported ())
-    {
-      Simulator::Schedule (GetPifs () + m_phy->CalculateTxDuration (psdu->GetSize (), txVector, m_phy->GetPhyBand ()), &MacLow::CfPollTimeout, this);
-    }
-  if (hdr.IsBeacon () && m_stationManager->GetPcfSupported ())
-    {
-      if (Simulator::Now () > m_lastBeacon + m_beaconInterval)
-        {
-          m_cfpForeshortening = (Simulator::Now () - m_lastBeacon - m_beaconInterval);
-        }
-      m_lastBeacon = Simulator::Now ();
-    }
-  else if (hdr.IsCfEnd () && m_stationManager->GetPcfSupported ())
-    {
-      m_cfpStart = NanoSeconds (0);
-      m_cfpForeshortening = NanoSeconds (0);
-      m_cfAckInfo.appendCfAck = false;
-      m_cfAckInfo.expectCfAck = false;
-    }
-  else if (IsCfPeriod () && hdr.HasData ())
-    {
-      m_cfAckInfo.expectCfAck = true;
-    }
+    if (hdr.IsCfPoll () && m_stationManager->GetPcfSupported ())
+      {
+        Simulator::Schedule (GetPifs () + m_phy->CalculateTxDuration (psdu->GetSize (), txVector, m_phy->GetPhyBand ()), &MacLow::CfPollTimeout, this);
+      }
+    if (hdr.IsBeacon () && m_stationManager->GetPcfSupported ())
+      {
+        if (Simulator::Now () > m_lastBeacon + m_beaconInterval)
+          {
+            m_cfpForeshortening = (Simulator::Now () - m_lastBeacon - m_beaconInterval);
+          }
+        m_lastBeacon = Simulator::Now ();
+      }
+    else if (hdr.IsCfEnd () && m_stationManager->GetPcfSupported ())
+      {
+        m_cfpStart = NanoSeconds (0);
+        m_cfpForeshortening = NanoSeconds (0);
+        m_cfAckInfo.appendCfAck = false;
+        m_cfAckInfo.expectCfAck = false;
+      }
+    else if (IsCfPeriod () && hdr.HasData ())
+      {
+        m_cfAckInfo.expectCfAck = true;
+      }
 
-  if (psdu->IsSingle ())
-    {
-      txVector.SetAggregation (true);
-      NS_LOG_DEBUG ("Sending S-MPDU");
-    }
-  else if (psdu->IsAggregate ())
-    {
-      txVector.SetAggregation (true);
-      NS_LOG_DEBUG ("Sending A-MPDU");
-    }
-  else
-    {
-      NS_LOG_DEBUG ("Sending non aggregate MPDU");
-    }
+    if (psdu->IsSingle ())
+      {
+        txVector.SetAggregation (true);
+        NS_LOG_DEBUG ("Sending S-MPDU");
+      }
+    else if (psdu->IsAggregate ())
+      {
+        txVector.SetAggregation (true);
+        NS_LOG_DEBUG ("Sending A-MPDU");
+      }
+    else
+      {
+        NS_LOG_DEBUG ("Sending non aggregate MPDU");
+      }
 
-  for (auto& mpdu : *PeekPointer (psdu))
-    {
-      if (mpdu->GetHeader ().IsQosData ())
-        {
-          auto edcaIt = m_edca.find (QosUtilsMapTidToAc (mpdu->GetHeader ().GetQosTid ()));
-          edcaIt->second->CompleteMpduTx (mpdu);
-        }
-    }
-  m_phy->Send (psdu, txVector);
+    for (auto& mpdu : *PeekPointer (psdu))
+      {
+        if (mpdu->GetHeader ().IsQosData ())
+          {
+            auto edcaIt = m_edca.find (QosUtilsMapTidToAc (mpdu->GetHeader ().GetQosTid ()));
+            edcaIt->second->CompleteMpduTx (mpdu);
+          }
+      }
+      
+    m_phy->Send (psdu, txVector);
 }
 
 void

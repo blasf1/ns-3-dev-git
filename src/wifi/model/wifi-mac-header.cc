@@ -985,6 +985,18 @@ case WIFI_MAC_ ## x: \
 #endif
 }
 
+void 
+WifiMacHeader::SetMulticastMode(Ptr<MulticastMode> mode)
+{
+  m_multicastMode = mode;
+}
+
+Ptr<MulticastMode>
+WifiMacHeader::GetMulticastMode(void) const
+{
+  return m_multicastMode;
+}
+
 TypeId
 WifiMacHeader::GetTypeId (void)
 {

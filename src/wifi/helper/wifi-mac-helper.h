@@ -107,7 +107,6 @@ public:
    */
   virtual Ptr<WifiMac> Create (Ptr<NetDevice> device) const;
 
-
 protected:
   ObjectFactory m_mac; ///< MAC object factory
 };

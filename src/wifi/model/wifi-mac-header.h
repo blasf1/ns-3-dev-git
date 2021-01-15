@@ -25,6 +25,7 @@
 
 #include "ns3/header.h"
 #include "ns3/mac48-address.h"
+#include "ns3/multicast-mode.h"
 
 namespace ns3 {
 
@@ -565,6 +566,18 @@ public:
    */
   typedef void (* TracedCallback)(const WifiMacHeader &header);
 
+  /**
+   * Set the Multicast Mode. IGMP is not implemented so this is used to keep track of the multicast policy used.
+   *
+   * \param qos the raw QoS Control field value
+   */
+  void SetMulticastMode(Ptr<MulticastMode> mode);
+   /**
+   * Set the Multicast Mode. IGMP is not implemented so this is used to keep track of the multicast policy used.
+   *
+   * \returns the multicast mode of the packet
+   */
+  Ptr<MulticastMode> GetMulticastMode(void) const;
 
 private:
   /**
@@ -625,6 +638,7 @@ private:
   uint8_t m_qosAckPolicy; ///< QoS Ack policy
   uint8_t m_amsduPresent; ///< A-MSDU present
   uint8_t m_qosStuff;     ///< QoS stuff
+  Ptr<MulticastMode> m_multicastMode; ///< Multicast info
 };
 
 } //namespace ns3
