@@ -31,6 +31,6 @@ Then, add a pointer to the mode object you have just created to the ApWifiMac in
 WifiHelper wifi;
 WifiMacHelper mac;
 mac.SetType("ns3::ApWifiMac", 
-					"MulticastMode", PointerValue(mode));
+	    "MulticastMode", PointerValue(mode));
 auto apDevice = wifi.Install(phy, mac, apNode);
 ```
